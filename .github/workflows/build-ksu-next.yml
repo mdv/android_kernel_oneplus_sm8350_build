@@ -1,0 +1,72 @@
+name: Build Lineage Kernel (With KSU-Next)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Branch of your repo to use for patches or config'
+        required: true
+        default: 'build-ksunext'
+      lineage_branch:
+        description: 'Kernel branch to build (e.g., lineage-22.2)'
+        required: true
+        default: 'lineage-22.2'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout kernel source
+      uses: actions/checkout@v3
+      with:
+        repository: mdv/android_kernel_oneplus_sm8350
+        ref: ${{ github.event.inputs.lineage_branch }}
+        path: sm8350
+        fetch-depth: 100
+
+    - name: Checkout GCC toolchain
+      uses: actions/checkout@v3
+      with:
+        repository: mvaisakh/gcc-arm64
+        ref: 05cb20a52f12389c3f2340b5103485108feae302
+        path: toolchain
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libdebuginfod-dev bc bison flex libssl-dev
+
+    - name: Inject KernelSU-Next
+      working-directory: sm8350
+      run: |
+        curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
+        curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
+
+    - name: Create build.sh
+      working-directory: sm8350
+      run: |
+        cat << 'EOF' > build.sh
+        #!/bin/bash
+        export ARCH=arm64
+        export SUBARCH=arm64
+        export PATH="$GITHUB_WORKSPACE/toolchain/bin:$PATH"
+        export KBUILD_BUILD_USER=github
+        export KBUILD_BUILD_HOST=actions
+        make O=out vendor/kona-perf_defconfig
+        make -j$(nproc --all) O=out
+        mv out/arch/arm64/boot/Image.gz-dtb out/ak3/Image.gz-dtb
+        cd out/ak3 && zip -r9 ../kernel-ksunext.zip *
+        EOF
+        chmod +x build.sh
+
+    - name: Build Kernel
+      working-directory: sm8350
+      run: bash build.sh
+
+    - name: Upload build output
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-ksunext-${{ github.run_id }}
+        path: |
+          sm8350/out/kernel-ksunext.zip
