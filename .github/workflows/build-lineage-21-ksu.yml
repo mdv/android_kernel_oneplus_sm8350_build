@@ -8,9 +8,9 @@ on:
         required: true
         default: 'build'
       lineage_branch:
-        description: 'Lineage kernel source branch (e.g., lineage-22.1)'
+        description: 'Lineage kernel source branch (lineage-21)'
         required: true
-        default: 'lineage-22.1'
+        default: 'lineage-21'
 
 jobs:
   build:
