@@ -65,7 +65,7 @@ jobs:
       run: bash build.sh
 
     - name: Upload build output
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: release-ksunext-${{ github.run_id }}
         path: |
