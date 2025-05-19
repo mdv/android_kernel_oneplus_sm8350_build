@@ -1,56 +1,66 @@
-name: Build Lineage-21 Kernel (With KSU)
+name: Build Lineage Kernel (With KSU)
 
 on:
   workflow_dispatch:
     inputs:
       target_branch:
-        description: 'Branch to build'
+        description: 'Branch of your fork to use for patches'
         required: true
         default: 'build'
+      lineage_branch:
+        description: 'Lineage kernel source branch (e.g., lineage-22.1)'
+        required: true
+        default: 'lineage-22.1'
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout kernel source
+    - name: Checkout kernel source (Lineage)
       uses: actions/checkout@v3
       with:
         repository: awakened1712/android_kernel_oneplus_sm8350
-        ref: lineage-21
+        ref: ${{ github.event.inputs.lineage_branch }}
         path: sm8350
         fetch-depth: 100
 
-    - name: Checkout gcc toolchain
+    - name: Checkout GCC toolchain
       uses: actions/checkout@v3
       with:
         repository: mvaisakh/gcc-arm64
         ref: 05cb20a52f12389c3f2340b5103485108feae302
         path: toolchain
 
-    - name: Checkout patches
+    - name: Checkout your fork for patches
       uses: actions/checkout@v3
       with:
-        ref: build
+        ref: ${{ github.event.inputs.target_branch }}
         path: patches
 
-    - name: Apply patches
+    - name: Apply KernelSU patch
       run: |
         cd sm8350
         git submodule add https://github.com/tiann/KernelSU.git
         git submodule update --init --recursive
         git apply ../patches/ksu.patch
 
-    - name: Android kernel build
+    - name: Install build dependencies
       run: |
-        sudo apt install libdebuginfod-dev
-        export PATH="$(pwd)/toolchain/bin:${PATH}"
+        sudo apt-get update
+        sudo apt-get install -y libdebuginfod-dev
+
+    - name: Build Kernel
+      run: |
+        export PATH="${GITHUB_WORKSPACE}/toolchain/bin:$PATH"
         cd sm8350
         bash build.sh
         git log --no-decorate --oneline -n 100 > out/ak3/ChangeLog.txt
 
-    - name: Upload final output
+    - name: Upload build output
       uses: actions/upload-artifact@v3
       with:
-        name: release-ksu
+        name: release-ksu-${{ github.run_id }}
         path: |
           sm8350/out/ak3/ChangeLog.txt
           sm8350/out/ak3/*.zip
