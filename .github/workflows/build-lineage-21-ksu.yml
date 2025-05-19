@@ -2,7 +2,11 @@ name: Build Lineage-21 Kernel (With KSU)
 
 on:
   workflow_dispatch:
-
+    inputs:
+      target_branch:
+        description: 'Branch to build'
+        required: true
+        default: 'build'
 jobs:
   build:
     runs-on: ubuntu-latest
