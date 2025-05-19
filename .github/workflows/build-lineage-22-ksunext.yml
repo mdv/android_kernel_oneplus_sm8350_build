@@ -41,8 +41,7 @@ jobs:
       working-directory: sm8350
       run: |
         curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
-        curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
-
+        
     - name: Build Kernel
       working-directory: sm8350
       run: bash build.sh
