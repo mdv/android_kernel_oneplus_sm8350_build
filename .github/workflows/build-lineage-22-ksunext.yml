@@ -43,30 +43,12 @@ jobs:
         curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
         curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
 
-    - name: Create build.sh
-      working-directory: sm8350
-      run: |
-        cat << 'EOF' > build.sh
-        #!/bin/bash
-        export ARCH=arm64
-        export SUBARCH=arm64
-        export PATH="$GITHUB_WORKSPACE/toolchain/bin:$PATH"
-        export KBUILD_BUILD_USER=github
-        export KBUILD_BUILD_HOST=actions
-        make O=out vendor/kona-perf_defconfig
-        make -j$(nproc --all) O=out
-        mv out/arch/arm64/boot/Image.gz-dtb out/ak3/Image.gz-dtb
-        cd out/ak3 && zip -r9 ../kernel-ksunext.zip *
-        EOF
-        chmod +x build.sh
-
     - name: Build Kernel
       working-directory: sm8350
       run: bash build.sh
 
-    - name: Upload build output
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: release-ksunext-${{ github.run_id }}
-        path: |
-          sm8350/out/kernel-ksunext.zip
+        name: out-raw-${{ github.run_id }}
+        path: out_artifacts.zip
